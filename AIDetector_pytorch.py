@@ -1,10 +1,12 @@
 import torch
 import numpy as np
 from models.experimental import attempt_load
-from utils.general import non_max_suppression, scale_coords
-from utils.BaseDetector import baseDet
+from utils.general import non_max_suppression, scale_boxes
+from temp.utils.BaseDetector import baseDet
 from utils.torch_utils import select_device
-from utils.datasets import letterbox
+from temp.utils.datasets import letterbox
+from models.common import DetectMultiBackend
+
 
 class Detector(baseDet):
 
@@ -15,12 +17,13 @@ class Detector(baseDet):
 
     def init_model(self):
 
-        self.weights = 'weights/yolov5s.pt'
+        self.weights = 'weights/best.pt'
         self.device = '0' if torch.cuda.is_available() else 'cpu'
         self.device = select_device(self.device)
-        model = attempt_load(self.weights, map_location=self.device)
-        model.to(self.device).eval()
-        model.half()
+        # model = attempt_load(self.weights, map_location=self.device)
+        model = DetectMultiBackend(self.weights, device=self.device, fp16=True)
+        # model.to(self.device).eval()
+        # model.half()
         # torch.save(model, 'test.pt')
         self.m = model
         self.names = model.module.names if hasattr(
@@ -45,19 +48,21 @@ class Detector(baseDet):
         im0, img = self.preprocess(im)
 
         pred = self.m(img, augment=False)[0]
-        pred = pred.float()
-        pred = non_max_suppression(pred, self.threshold, 0.4)
+        # pred = pred.float()
+        pred = non_max_suppression(pred, conf_thres=0.7, iou_thres=0.8, max_det=100)
 
         pred_boxes = []
         for det in pred:
 
             if det is not None and len(det):
-                det[:, :4] = scale_coords(
+                # det[:, :4] = scale_coords(
+                #     img.shape[2:], det[:, :4], im0.shape).round()
+                det[:, :4] = scale_boxes(
                     img.shape[2:], det[:, :4], im0.shape).round()
 
                 for *x, conf, cls_id in det:
                     lbl = self.names[int(cls_id)]
-                    if not lbl in ['person', 'car', 'truck']:
+                    if not lbl in ['ACFighter', 'Head', 'Tail']:
                         continue
                     x1, y1 = int(x[0]), int(x[1])
                     x2, y2 = int(x[2]), int(x[3])

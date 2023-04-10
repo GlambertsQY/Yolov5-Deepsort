@@ -7,7 +7,9 @@ def main():
     name = 'demo'
 
     det = Detector()
-    cap = cv2.VideoCapture('E:/视频/行人监控/test01.mp4')
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     fps = int(cap.get(5))
     print('fps:', fps)
     t = int(1000/fps)
